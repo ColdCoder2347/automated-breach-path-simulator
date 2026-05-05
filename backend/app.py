@@ -16,9 +16,11 @@ from backend.attack_engine.schemas import (
     NetworkData,
     RemediationRequest,
     RemediationResponse,
+    TopologyValidationResponse,
     TopPathsRequest,
     TopPathsResponse,
 )
+from backend.attack_engine.validation import validate_topology
 
 
 app = FastAPI(title="Automated Breach Path Simulator API", version="1.0.0")
@@ -54,6 +56,11 @@ def top_paths(payload: TopPathsRequest) -> TopPathsResponse:
 @app.post("/remediation/recommend")
 def remediation_recommend(payload: RemediationRequest) -> RemediationResponse:
     return build_remediation_response(payload)
+
+
+@app.post("/validate-topology")
+def validate_local_topology(payload: NetworkData) -> TopologyValidationResponse:
+    return validate_topology(payload)
 
 
 @app.post("/report/json")

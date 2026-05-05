@@ -3,6 +3,7 @@ from __future__ import annotations
 import networkx as nx
 
 from backend.attack_engine.schemas import NetworkData, Node, PathStep
+from backend.attack_engine.mitre import infer_mitre_mapping
 
 
 def build_graph(network: NetworkData) -> nx.DiGraph:
@@ -37,6 +38,7 @@ def path_steps(graph: nx.DiGraph, path: list[str]) -> list[PathStep]:
         edge_data = None
         if index > 0:
             edge_data = graph.edges[path[index - 1], node_id]
+        mapping = infer_mitre_mapping(edge_data) if edge_data else {}
         steps.append(
             PathStep(
                 index=index,
@@ -46,6 +48,9 @@ def path_steps(graph: nx.DiGraph, path: list[str]) -> list[PathStep]:
                 edge_label=edge_data.get("label") if edge_data else None,
                 cvss=edge_data.get("cvss") if edge_data else None,
                 complexity=edge_data.get("complexity") if edge_data else None,
+                mitre_tactic=mapping.get("mitre_tactic"),
+                mitre_technique=mapping.get("mitre_technique"),
+                mitre_id=mapping.get("mitre_id"),
             )
         )
     return steps

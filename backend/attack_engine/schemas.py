@@ -25,6 +25,9 @@ class Edge(BaseModel):
     label: str = "connection"
     cvss: float = Field(default=5, ge=0, le=10)
     complexity: float = Field(default=2, ge=1, le=10)
+    mitre_tactic: str | None = None
+    mitre_technique: str | None = None
+    mitre_id: str | None = None
 
 
 class NetworkData(BaseModel):
@@ -47,6 +50,9 @@ class PathStep(BaseModel):
     edge_label: str | None = None
     cvss: float | None = None
     complexity: float | None = None
+    mitre_tactic: str | None = None
+    mitre_technique: str | None = None
+    mitre_id: str | None = None
 
 
 class AnalyzeResponse(BaseModel):
@@ -76,6 +82,7 @@ class PathSummary(BaseModel):
     risk_score: float
     total_weight: float
     hop_count: int
+    mitre_chain: list[str]
     reason: str
 
 
@@ -109,3 +116,17 @@ class RemediationResponse(BaseModel):
     selected_critical_asset: str | None
     baseline_highest_risk: float
     recommendations: list[RemediationRecommendation]
+
+
+class TopologyValidationIssue(BaseModel):
+    severity: str
+    code: str
+    message: str
+    target: str | None = None
+
+
+class TopologyValidationResponse(BaseModel):
+    valid: bool
+    errors: list[TopologyValidationIssue]
+    warnings: list[TopologyValidationIssue]
+    summary: dict[str, int]

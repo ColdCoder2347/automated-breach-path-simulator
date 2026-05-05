@@ -7,6 +7,8 @@ from typing import Any
 from fastapi import Response
 
 from backend.attack_engine.analysis import analyze_payload
+from backend.attack_engine.graph import build_graph
+from backend.attack_engine.mitre import path_mitre_chain
 from backend.attack_engine.schemas import AnalyzeRequest
 
 
@@ -17,12 +19,17 @@ def report_json_payload(payload: AnalyzeRequest) -> dict[str, Any]:
 
 def report_pdf_response(payload: AnalyzeRequest) -> Response:
     analysis = analyze_payload(payload)
+    graph = build_graph(payload.network)
+    mitre_chain = path_mitre_chain(graph, analysis.path)
     lines = [
         f"Algorithm: {analysis.algorithm.value.upper()}",
         f"Entry point: {analysis.selected_entry}",
         f"Critical asset: {analysis.selected_critical_asset}",
         f"Risk score: {analysis.risk_score}/100",
         f"Path: {' -> '.join(analysis.path) if analysis.path else 'No path found'}",
+        "",
+        "MITRE ATT&CK Chain:",
+        *(mitre_chain or ["No MITRE chain available."]),
         "",
         "Findings:",
         *analysis.findings,

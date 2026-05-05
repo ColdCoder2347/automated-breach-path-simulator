@@ -3,6 +3,7 @@ from __future__ import annotations
 import networkx as nx
 
 from backend.attack_engine.graph import choose_default, node_ids_by_role, path_steps
+from backend.attack_engine.mitre import path_mitre_chain
 from backend.attack_engine.scoring import score_path
 from backend.attack_engine.schemas import (
     Algorithm,
@@ -107,6 +108,7 @@ def build_top_paths_response(payload: TopPathsRequest) -> TopPathsResponse:
                 risk_score=risk_score,
                 total_weight=path_total_weight(graph, path),
                 hop_count=max(len(path) - 1, 0),
+                mitre_chain=path_mitre_chain(graph, path),
                 reason=explain_path(graph, path, risk_score),
             )
         )
