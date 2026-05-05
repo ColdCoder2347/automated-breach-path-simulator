@@ -1,0 +1,29 @@
+{
+  "name": "automated-breach-path-simulator",
+  "version": "1.0.0",
+  "description": "Cross-platform Electron desktop app for simulating cybersecurity breach paths in network graphs.",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k \"node scripts/run-backend.js --reload\" \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 http://127.0.0.1:8765/health && electron .\"",
+    "dev:backend": "node scripts/run-backend.js --reload",
+    "dev:frontend": "vite --host 127.0.0.1",
+    "start": "electron .",
+    "build": "vite build",
+    "lint": "eslint frontend/src --ext .js,.jsx"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "axios": "^1.12.2",
+    "cytoscape": "^3.33.1",
+    "electron": "^38.4.0",
+    "vite": "^7.1.7",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "eslint": "^9.36.0",
+    "wait-on": "^9.0.1"
+  }
+}

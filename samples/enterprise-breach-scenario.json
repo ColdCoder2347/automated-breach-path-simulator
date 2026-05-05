@@ -1,0 +1,296 @@
+{
+  "nodes": [
+    {
+      "id": "internet_phishing",
+      "label": "Internet Phishing Campaign",
+      "type": "entry",
+      "asset_value": 1
+    },
+    {
+      "id": "vpn_gateway",
+      "label": "VPN Gateway",
+      "type": "entry",
+      "asset_value": 4
+    },
+    {
+      "id": "supplier_portal",
+      "label": "Supplier Portal",
+      "type": "entry",
+      "asset_value": 5
+    },
+    {
+      "id": "sales_laptop",
+      "label": "Sales Laptop",
+      "type": "user",
+      "asset_value": 3
+    },
+    {
+      "id": "finance_workstation",
+      "label": "Finance Workstation",
+      "type": "user",
+      "asset_value": 6
+    },
+    {
+      "id": "helpdesk_workstation",
+      "label": "Helpdesk Workstation",
+      "type": "user",
+      "asset_value": 5
+    },
+    {
+      "id": "jump_box",
+      "label": "Admin Jump Box",
+      "type": "server",
+      "asset_value": 8
+    },
+    {
+      "id": "active_directory",
+      "label": "Active Directory Domain Controller",
+      "type": "server",
+      "asset_value": 10
+    },
+    {
+      "id": "file_server",
+      "label": "Corporate File Server",
+      "type": "server",
+      "asset_value": 7
+    },
+    {
+      "id": "hr_app",
+      "label": "HR Application Server",
+      "type": "server",
+      "asset_value": 8
+    },
+    {
+      "id": "ci_runner",
+      "label": "CI Build Runner",
+      "type": "server",
+      "asset_value": 7
+    },
+    {
+      "id": "kubernetes_api",
+      "label": "Kubernetes API Server",
+      "type": "server",
+      "asset_value": 9
+    },
+    {
+      "id": "secrets_vault",
+      "label": "Secrets Vault",
+      "type": "critical",
+      "asset_value": 10
+    },
+    {
+      "id": "customer_db",
+      "label": "Customer Database",
+      "type": "critical",
+      "asset_value": 10
+    },
+    {
+      "id": "payment_db",
+      "label": "Payment Database",
+      "type": "critical",
+      "asset_value": 10
+    },
+    {
+      "id": "backup_vault",
+      "label": "Immutable Backup Vault",
+      "type": "critical",
+      "asset_value": 9
+    },
+    {
+      "id": "siem",
+      "label": "SIEM Console",
+      "type": "server",
+      "asset_value": 8
+    },
+    {
+      "id": "edr_console",
+      "label": "EDR Management Console",
+      "type": "server",
+      "asset_value": 8
+    }
+  ],
+  "edges": [
+    {
+      "source": "internet_phishing",
+      "target": "sales_laptop",
+      "label": "Malicious OAuth consent grant",
+      "cvss": 7.4,
+      "complexity": 3
+    },
+    {
+      "source": "internet_phishing",
+      "target": "finance_workstation",
+      "label": "Invoice macro execution",
+      "cvss": 8.2,
+      "complexity": 3
+    },
+    {
+      "source": "vpn_gateway",
+      "target": "helpdesk_workstation",
+      "label": "Leaked VPN credentials without MFA",
+      "cvss": 8.8,
+      "complexity": 2
+    },
+    {
+      "source": "supplier_portal",
+      "target": "ci_runner",
+      "label": "Compromised deploy token",
+      "cvss": 9.1,
+      "complexity": 3
+    },
+    {
+      "source": "sales_laptop",
+      "target": "file_server",
+      "label": "Over-permissive shared drive",
+      "cvss": 6.5,
+      "complexity": 2
+    },
+    {
+      "source": "sales_laptop",
+      "target": "hr_app",
+      "label": "Stored browser session token",
+      "cvss": 7.2,
+      "complexity": 4
+    },
+    {
+      "source": "finance_workstation",
+      "target": "file_server",
+      "label": "Mapped finance share credential reuse",
+      "cvss": 7.8,
+      "complexity": 2
+    },
+    {
+      "source": "finance_workstation",
+      "target": "active_directory",
+      "label": "Cached privileged Kerberos ticket",
+      "cvss": 9.3,
+      "complexity": 4
+    },
+    {
+      "source": "helpdesk_workstation",
+      "target": "jump_box",
+      "label": "Local admin password reuse",
+      "cvss": 8.6,
+      "complexity": 2
+    },
+    {
+      "source": "helpdesk_workstation",
+      "target": "edr_console",
+      "label": "Helpdesk role can disable endpoint policy",
+      "cvss": 7.7,
+      "complexity": 3
+    },
+    {
+      "source": "jump_box",
+      "target": "active_directory",
+      "label": "Domain admin RDP session hijack",
+      "cvss": 9.8,
+      "complexity": 3
+    },
+    {
+      "source": "jump_box",
+      "target": "siem",
+      "label": "Shared admin account",
+      "cvss": 7.5,
+      "complexity": 2
+    },
+    {
+      "source": "active_directory",
+      "target": "secrets_vault",
+      "label": "Vault admin group nesting",
+      "cvss": 9.4,
+      "complexity": 3
+    },
+    {
+      "source": "active_directory",
+      "target": "customer_db",
+      "label": "Privileged database service account",
+      "cvss": 9.6,
+      "complexity": 3
+    },
+    {
+      "source": "active_directory",
+      "target": "backup_vault",
+      "label": "Backup operator delegation",
+      "cvss": 8.1,
+      "complexity": 3
+    },
+    {
+      "source": "file_server",
+      "target": "hr_app",
+      "label": "Plaintext app config in shared folder",
+      "cvss": 8.0,
+      "complexity": 2
+    },
+    {
+      "source": "file_server",
+      "target": "backup_vault",
+      "label": "Backup script credential exposure",
+      "cvss": 8.7,
+      "complexity": 2
+    },
+    {
+      "source": "hr_app",
+      "target": "customer_db",
+      "label": "SQL connection string in environment",
+      "cvss": 8.4,
+      "complexity": 3
+    },
+    {
+      "source": "ci_runner",
+      "target": "kubernetes_api",
+      "label": "Cluster-admin service account token",
+      "cvss": 9.8,
+      "complexity": 2
+    },
+    {
+      "source": "ci_runner",
+      "target": "secrets_vault",
+      "label": "Build logs expose vault token",
+      "cvss": 8.9,
+      "complexity": 3
+    },
+    {
+      "source": "kubernetes_api",
+      "target": "secrets_vault",
+      "label": "Mounted production secret",
+      "cvss": 9.0,
+      "complexity": 2
+    },
+    {
+      "source": "kubernetes_api",
+      "target": "payment_db",
+      "label": "Payment namespace database secret",
+      "cvss": 9.5,
+      "complexity": 2
+    },
+    {
+      "source": "secrets_vault",
+      "target": "customer_db",
+      "label": "Customer DB root credential",
+      "cvss": 9.9,
+      "complexity": 1
+    },
+    {
+      "source": "secrets_vault",
+      "target": "payment_db",
+      "label": "Payment DB credential",
+      "cvss": 9.9,
+      "complexity": 1
+    },
+    {
+      "source": "edr_console",
+      "target": "finance_workstation",
+      "label": "Remote shell response feature abuse",
+      "cvss": 8.3,
+      "complexity": 3
+    },
+    {
+      "source": "siem",
+      "target": "backup_vault",
+      "label": "Log archive service credential reuse",
+      "cvss": 7.6,
+      "complexity": 4
+    }
+  ]
+}
