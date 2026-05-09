@@ -28,6 +28,13 @@ class Edge(BaseModel):
     mitre_tactic: str | None = None
     mitre_technique: str | None = None
     mitre_id: str | None = None
+    remediation_title: str | None = None
+    remediation_action: str | None = None
+    remediation_control: str | None = None
+    remediation_effort: str | None = None
+    remediation_cost: str | None = None
+    remediation_owner: str | None = None
+    remediation_priority: int | None = Field(default=None, ge=1, le=5)
 
 
 class NetworkData(BaseModel):
@@ -109,6 +116,12 @@ class RemediationRecommendation(BaseModel):
     affected_paths: int
     estimated_risk_reduction: float
     recommendation: str
+    control: str
+    effort: str
+    cost: str
+    owner: str
+    evidence: list[str]
+    source: str
 
 
 class RemediationResponse(BaseModel):

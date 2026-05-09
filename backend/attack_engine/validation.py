@@ -141,6 +141,26 @@ def validate_topology(network: NetworkData) -> TopologyValidationResponse:
                 )
             )
 
+        if not any(
+            (
+                edge.remediation_title,
+                edge.remediation_action,
+                edge.remediation_control,
+                edge.remediation_effort,
+                edge.remediation_cost,
+                edge.remediation_owner,
+                edge.remediation_priority,
+            )
+        ):
+            warnings.append(
+                issue(
+                    "warning",
+                    "REMEDIATION_METADATA_MISSING",
+                    f"Edge '{edge_id}' has no explicit remediation metadata; recommendations will use fallback rules.",
+                    edge_id,
+                )
+            )
+
     connected_node_ids = {edge.source for edge in network.edges} | {edge.target for edge in network.edges}
     isolated_nodes = sorted(unique_node_ids - connected_node_ids)
 

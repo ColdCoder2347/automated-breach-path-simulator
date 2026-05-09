@@ -129,14 +129,28 @@
       "target": "helpdesk_workstation",
       "label": "Leaked VPN credentials without MFA",
       "cvss": 8.8,
-      "complexity": 2
+      "complexity": 2,
+      "remediation_title": "Enforce phishing-resistant MFA on VPN access",
+      "remediation_action": "Require phishing-resistant MFA for VPN logins, block legacy authentication, and alert on impossible-travel sign-ins.",
+      "remediation_control": "Identity and access management",
+      "remediation_effort": "medium",
+      "remediation_cost": "medium",
+      "remediation_owner": "Identity Team",
+      "remediation_priority": 1
     },
     {
       "source": "supplier_portal",
       "target": "ci_runner",
       "label": "Compromised deploy token",
       "cvss": 9.1,
-      "complexity": 3
+      "complexity": 3,
+      "remediation_title": "Rotate and scope supplier deploy tokens",
+      "remediation_action": "Rotate the supplier deploy token, restrict it to required repositories, enforce expiry, and move token issuance behind approval.",
+      "remediation_control": "Supply chain access governance",
+      "remediation_effort": "medium",
+      "remediation_cost": "low",
+      "remediation_owner": "DevSecOps Team",
+      "remediation_priority": 1
     },
     {
       "source": "sales_laptop",
@@ -164,7 +178,14 @@
       "target": "active_directory",
       "label": "Cached privileged Kerberos ticket",
       "cvss": 9.3,
-      "complexity": 4
+      "complexity": 4,
+      "remediation_title": "Remove privileged sessions from user workstations",
+      "remediation_action": "Prevent privileged Kerberos tickets from landing on standard workstations by requiring admin workstations and just-in-time elevation.",
+      "remediation_control": "Privileged access management",
+      "remediation_effort": "high",
+      "remediation_cost": "medium",
+      "remediation_owner": "Identity Team",
+      "remediation_priority": 1
     },
     {
       "source": "helpdesk_workstation",
@@ -185,7 +206,14 @@
       "target": "active_directory",
       "label": "Domain admin RDP session hijack",
       "cvss": 9.8,
-      "complexity": 3
+      "complexity": 3,
+      "remediation_title": "Harden admin jump box session controls",
+      "remediation_action": "Disable credential delegation, isolate admin sessions, enforce privileged access workstations, and monitor RDP session hijacking indicators.",
+      "remediation_control": "Privileged access workstation",
+      "remediation_effort": "high",
+      "remediation_cost": "medium",
+      "remediation_owner": "Infrastructure Team",
+      "remediation_priority": 1
     },
     {
       "source": "jump_box",
@@ -199,7 +227,14 @@
       "target": "secrets_vault",
       "label": "Vault admin group nesting",
       "cvss": 9.4,
-      "complexity": 3
+      "complexity": 3,
+      "remediation_title": "Remove nested vault administrator access",
+      "remediation_action": "Remove nested Active Directory groups from vault administration, require break-glass approval, and review all vault admin assignments weekly.",
+      "remediation_control": "Privileged access management",
+      "remediation_effort": "medium",
+      "remediation_cost": "low",
+      "remediation_owner": "Security Engineering",
+      "remediation_priority": 1
     },
     {
       "source": "active_directory",
@@ -241,7 +276,14 @@
       "target": "kubernetes_api",
       "label": "Cluster-admin service account token",
       "cvss": 9.8,
-      "complexity": 2
+      "complexity": 2,
+      "remediation_title": "Remove cluster-admin token from CI runner",
+      "remediation_action": "Replace the cluster-admin service account with namespace-scoped deployment roles and rotate the existing token immediately.",
+      "remediation_control": "Kubernetes RBAC",
+      "remediation_effort": "medium",
+      "remediation_cost": "low",
+      "remediation_owner": "Platform Team",
+      "remediation_priority": 1
     },
     {
       "source": "ci_runner",
@@ -262,7 +304,14 @@
       "target": "payment_db",
       "label": "Payment namespace database secret",
       "cvss": 9.5,
-      "complexity": 2
+      "complexity": 2,
+      "remediation_title": "Move payment database secret to managed vault",
+      "remediation_action": "Remove static payment database credentials from Kubernetes secrets, use dynamic vault-issued credentials, and enforce short TTL rotation.",
+      "remediation_control": "Secrets management",
+      "remediation_effort": "medium",
+      "remediation_cost": "medium",
+      "remediation_owner": "Platform Team",
+      "remediation_priority": 1
     },
     {
       "source": "secrets_vault",
@@ -276,7 +325,14 @@
       "target": "payment_db",
       "label": "Payment DB credential",
       "cvss": 9.9,
-      "complexity": 1
+      "complexity": 1,
+      "remediation_title": "Rotate payment database root credential",
+      "remediation_action": "Rotate the payment database credential, replace root access with application-specific least privilege roles, and monitor vault reads.",
+      "remediation_control": "Database access governance",
+      "remediation_effort": "medium",
+      "remediation_cost": "low",
+      "remediation_owner": "Database Team",
+      "remediation_priority": 1
     },
     {
       "source": "edr_console",
