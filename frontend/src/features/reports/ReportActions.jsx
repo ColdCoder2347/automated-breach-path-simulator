@@ -1,3 +1,5 @@
+import React from "react";
+
 export function ReportActions({ disabled, onExportJson, onExportPdf, onUpload }) {
   return (
     <section className="panel">

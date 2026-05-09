@@ -1,3 +1,5 @@
+import React from "react";
+
 export function StepTimeline({ activeStep, currentStep, steps, onStepSelect }) {
   return (
     <section className="intelligence-panel">

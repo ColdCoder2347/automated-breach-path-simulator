@@ -1,3 +1,5 @@
+import React from "react";
+
 export function TopPathsPanel({ selectedPath, topPaths, onSelectPath }) {
   const paths = topPaths?.paths ?? [];
 

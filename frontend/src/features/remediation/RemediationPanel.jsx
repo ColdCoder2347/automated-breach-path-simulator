@@ -1,3 +1,5 @@
+import React from "react";
+
 export function RemediationPanel({ remediation }) {
   const recommendations = remediation?.recommendations ?? [];
 

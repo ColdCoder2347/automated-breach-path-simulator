@@ -1,3 +1,5 @@
+import React from "react";
+
 export function MitreChainPanel({ chain, currentStep }) {
   return (
     <section className="intelligence-panel">

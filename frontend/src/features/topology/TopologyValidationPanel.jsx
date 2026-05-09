@@ -1,3 +1,5 @@
+import React from "react";
+
 export function TopologyValidationPanel({ compact = false, validation }) {
   const warnings = validation?.warnings ?? [];
   const errors = validation?.errors ?? [];
