@@ -149,8 +149,9 @@ button:disabled {
 .workspace {
   background: #111827;
   display: grid;
-  grid-template-rows: auto minmax(260px, 1fr) 330px;
+  grid-template-rows: minmax(0, 1fr);
   min-width: 0;
+  min-height: 0;
 }
 
 .toolbar {
@@ -201,29 +202,26 @@ button:disabled {
 }
 
 .graph-area {
+  height: 100%;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
 }
 
-.bottom-drawer,
-.intelligence-grid {
+.bottom-drawer {
   background: #0f172a;
   border-top: 1px solid #1f2937;
   display: grid;
   gap: 20px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   overflow: auto;
   padding: 18px 22px;
 }
 
-.bottom-drawer section,
-.intelligence-panel {
+.bottom-drawer section {
   display: grid;
   gap: 12px;
   align-content: start;
-}
-
-.intelligence-panel {
-  min-width: 0;
 }
 
 .step-focus {
@@ -236,17 +234,10 @@ button:disabled {
 }
 
 .step-focus span,
-.step-focus em,
 .bottom-drawer p,
-.intelligence-panel p,
 li {
   color: #cbd5e1;
   font-size: 13px;
-}
-
-.step-focus em {
-  color: #93c5fd;
-  font-style: normal;
 }
 
 .step-list {
@@ -274,109 +265,6 @@ ul {
   padding-left: 18px;
 }
 
-.validation-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.validation-summary span,
-.path-card span,
-.path-card small,
-.recommendation span,
-.recommendation small {
-  color: #94a3b8;
-  font-size: 12px;
-}
-
-.status-good {
-  color: #86efac !important;
-}
-
-.status-bad {
-  color: #fca5a5 !important;
-}
-
-.validation.compact ul {
-  max-height: 108px;
-  overflow: hidden;
-}
-
-.path-stack,
-.recommendation-list,
-.mitre-chain {
-  display: grid;
-  gap: 9px;
-}
-
-.path-card {
-  align-items: stretch;
-  background: #172033;
-  border: 1px solid #243044;
-  border-radius: 8px;
-  display: grid;
-  gap: 5px;
-  justify-content: stretch;
-  min-height: 82px;
-  padding: 10px;
-  text-align: left;
-  width: 100%;
-}
-
-.path-card b {
-  color: #f8fafc;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.path-card.selected {
-  border-color: #f59e0b;
-  box-shadow: inset 3px 0 0 #f59e0b;
-}
-
-.mitre-chain {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.mitre-chain li {
-  background: #172033;
-  border: 1px solid #243044;
-  border-radius: 8px;
-  padding: 9px 10px;
-}
-
-.mitre-chain li.active {
-  border-color: #a855f7;
-  color: #f5d0fe;
-}
-
-.recommendation {
-  background: #172033;
-  border: 1px solid #243044;
-  border-radius: 8px;
-  display: grid;
-  gap: 8px;
-  padding: 10px;
-}
-
-.recommendation div {
-  display: grid;
-  gap: 3px;
-}
-
-.recommendation b {
-  color: #f8fafc;
-  font-size: 13px;
-}
-
-.recommendation p {
-  line-height: 1.4;
-}
-
 @media (max-width: 980px) {
   body {
     min-width: 0;
@@ -398,8 +286,7 @@ ul {
     min-height: 720px;
   }
 
-  .bottom-drawer,
-  .intelligence-grid {
+  .bottom-drawer {
     grid-template-columns: 1fr;
   }
 }

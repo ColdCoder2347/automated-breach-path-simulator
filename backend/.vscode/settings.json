@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "C:/Users/Nandan/AppData/Roaming/Python/Python314/site-packages"
+    ],
+    "python.analysis.typeCheckingMode": "basic"
+}
