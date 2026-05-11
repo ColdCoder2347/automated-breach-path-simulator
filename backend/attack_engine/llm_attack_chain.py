@@ -6,7 +6,12 @@ import urllib.error
 from fastapi import HTTPException
 
 from backend.attack_engine.graph import build_graph, choose_default, node_ids_by_role, path_steps
-from backend.attack_engine.ollama_client import call_ollama_generate, ollama_model, parse_llm_json
+from backend.attack_engine.ollama_client import (
+    OllamaGenerateError,
+    call_ollama_generate,
+    ollama_model,
+    parse_llm_json,
+)
 from backend.attack_engine.paths import compute_path
 from backend.attack_engine.schemas import LLMAttackChainRequest, LLMAttackChainResponse
 
@@ -25,6 +30,8 @@ def build_llm_attack_chain_response(payload: LLMAttackChainRequest) -> LLMAttack
     try:
         raw_response = call_ollama_generate(model, prompt, num_predict=1200)
         parsed = parse_llm_json(raw_response.get("response", ""))
+    except OllamaGenerateError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except urllib.error.URLError as exc:
         raise HTTPException(
             status_code=503,

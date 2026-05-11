@@ -30,6 +30,8 @@ HOSTNAME_REGEX = (
 
 CVE_REGEX = r"CVE-\d{4}-\d+"
 
+CVSS_REGEX = r"\bCVSS(?:\s*(?:score|v[0-9.]+))?\s*[:=]?\s*(10(?:\.0)?|[0-9](?:\.[0-9])?)\b"
+
 SERVICE_REGEX = (
     r"\b(?:ssh|rdp|http|https|ftp|smb|mysql|postgres|redis)\b"
 )
@@ -63,7 +65,17 @@ STOPWORDS = {
     "system",
     "user",
     "users",
-    "port"
+    "port",
+    "credential",
+    "credentials",
+    "password",
+    "passwords",
+    "leaked",
+    "weak",
+    "vulnerable",
+    "exploit",
+    "exploited",
+    "reaches"
 }
 
 # =========================================================
@@ -119,7 +131,7 @@ def normalize_id(value: str):
 def clean_entity_label(value: str):
     cleaned = " ".join(value.split())
     cleaned = re.sub(
-        r"^(?:to|from|via|through|into|using|connects?\s+to)\s+",
+        r"^(?:to|from|via|through|into|using|reaches|connects?\s+to)\s+",
         "",
         cleaned,
         flags=re.IGNORECASE
@@ -132,6 +144,142 @@ def safe_float(value, fallback: float):
         return float(value)
     except (TypeError, ValueError):
         return fallback
+
+
+def clamp(value: float, minimum: float, maximum: float):
+    return max(minimum, min(maximum, value))
+
+
+def infer_asset_value(label: str, node_type: str, context: str = ""):
+    text = f"{label} {node_type} {context}".lower()
+    score = 4.0
+
+    if node_type == "critical":
+        score += 3.0
+    elif node_type == "database":
+        score += 2.0
+    elif node_type == "entry":
+        score += 0.5
+
+    weighted_keywords = {
+        "payment": 2.5,
+        "customer": 2.0,
+        "finance": 2.0,
+        "admin": 2.0,
+        "domain controller": 2.5,
+        "active directory": 2.5,
+        "vault": 2.5,
+        "backup": 1.5,
+        "production": 1.5,
+        "database": 1.5,
+        "public": 0.5,
+        "test": -1.0,
+        "dev": -0.8,
+    }
+
+    for keyword, weight in weighted_keywords.items():
+        if keyword in text:
+            score += weight
+
+    return round(clamp(score, 1, 10), 1)
+
+
+def extract_cvss(text: str):
+    matches = re.findall(CVSS_REGEX, text, flags=re.IGNORECASE)
+    if matches:
+        return clamp(float(matches[-1]), 0, 10)
+
+    if re.search(CVE_REGEX, text, flags=re.IGNORECASE):
+        return 8.8
+
+    lowered = text.lower()
+    score = 4.5
+
+    keyword_weights = {
+        "critical": 2.8,
+        "remote code execution": 3.0,
+        "rce": 3.0,
+        "privilege escalation": 2.4,
+        "credential": 2.0,
+        "leaked": 1.8,
+        "password": 1.8,
+        "public": 1.2,
+        "internet": 1.2,
+        "exposed": 1.2,
+        "unpatched": 1.6,
+        "weak": 1.0,
+        "misconfigured": 1.0,
+        "open": 0.8,
+        "segmented": -1.2,
+        "mfa": -1.0,
+        "patched": -1.4,
+        "encrypted": -0.8,
+    }
+
+    for keyword, weight in keyword_weights.items():
+        if keyword in lowered:
+            score += weight
+
+    return round(clamp(score, 0.1, 10), 1)
+
+
+def infer_complexity(text: str):
+    lowered = text.lower()
+    score = 4.0
+
+    keyword_weights = {
+        "public": -1.0,
+        "internet": -1.0,
+        "exposed": -1.0,
+        "default password": -1.5,
+        "leaked": -1.0,
+        "open": -0.7,
+        "credential": -0.5,
+        "mfa": 1.8,
+        "segmented": 1.8,
+        "firewall": 1.2,
+        "vpn": 0.8,
+        "requires": 1.0,
+        "manual": 0.7,
+        "patched": 1.2,
+        "hardened": 1.2,
+    }
+
+    for keyword, weight in keyword_weights.items():
+        if keyword in lowered:
+            score += weight
+
+    return round(clamp(score, 1, 10), 1)
+
+
+def infer_edge_label(sentence: str):
+    sentence_lower = sentence.lower()
+
+    service_labels = (
+        "ssh",
+        "rdp",
+        "https",
+        "http",
+        "smb",
+        "sql",
+        "mysql",
+        "postgres",
+        "ftp",
+        "redis",
+    )
+
+    for service in service_labels:
+        if service in sentence_lower:
+            return service
+
+    if "credential" in sentence_lower or "password" in sentence_lower:
+        return "credential_access"
+    if "phishing" in sentence_lower:
+        return "phishing"
+    if "trust" in sentence_lower or "delegation" in sentence_lower:
+        return "trust_relationship"
+
+    return "inferred_relationship"
 
 
 def extract_json_candidate(text: str):
@@ -224,7 +372,7 @@ def extract_nodes(text: str):
             id=node_id,
             label=value,
             type=classify_node(value),
-            asset_value=5.0
+            asset_value=infer_asset_value(value, classify_node(value), text)
         )
 
     # safer fallback extraction
@@ -266,7 +414,7 @@ def extract_nodes(text: str):
             id=node_id,
             label=word,
             type=classify_node(word),
-            asset_value=5.0
+            asset_value=infer_asset_value(word, classify_node(word), text)
         )
 
     return nodes
@@ -359,38 +507,13 @@ def infer_edges(
 
             seen.add(edge_key)
 
-            label = "network_access"
-
-            if "ssh" in sentence_lower:
-                label = "ssh"
-
-            elif "rdp" in sentence_lower:
-                label = "rdp"
-
-            elif "http" in sentence_lower:
-                label = "http"
-
-            elif "smb" in sentence_lower:
-                label = "smb"
-
-            elif "sql" in sentence_lower:
-                label = "sql"
-
-            cvss = 5.0
-
-            if re.search(
-                CVE_REGEX,
-                sentence
-            ):
-                cvss = 9.0
-
             edges.append(
                 Edge(
                     source=src.id,
                     target=dst.id,
-                    label=label,
-                    cvss=cvss,
-                    complexity=3.0
+                    label=infer_edge_label(sentence),
+                    cvss=extract_cvss(sentence),
+                    complexity=infer_complexity(sentence)
                 )
             )
 
@@ -408,8 +531,8 @@ def infer_sequential_edges(nodes: dict[str, Node]):
             source=values[index].id,
             target=values[index + 1].id,
             label="inferred_relationship",
-            cvss=5.0,
-            complexity=4.0
+            cvss=round((values[index].asset_value + values[index + 1].asset_value) / 2, 1),
+            complexity=5.0
         )
         for index in range(len(values) - 1)
     ]
@@ -490,7 +613,10 @@ def ensure_special_nodes(
             values[-1]
         )
         preferred.type = "critical"
-        preferred.asset_value = max(preferred.asset_value, 9.0)
+        preferred.asset_value = max(
+            preferred.asset_value,
+            infer_asset_value(preferred.label, preferred.type)
+        )
 
 
 # =========================================================
@@ -547,11 +673,18 @@ def parse_structured_topology(raw: dict):
         if not node_id:
             node_id = f"node_{index + 1}"
 
+        label = str(item.get("label") or raw_id)
+        node_type = str(item.get("type") or classify_node(label))
+        asset_context = json.dumps(item)
+
         nodes[node_id] = Node(
             id=node_id,
-            label=str(item.get("label") or raw_id),
-            type=str(item.get("type") or classify_node(str(item.get("label") or raw_id))),
-            asset_value=safe_float(item.get("asset_value"), 5.0),
+            label=label,
+            type=node_type,
+            asset_value=safe_float(
+                item.get("asset_value"),
+                infer_asset_value(label, node_type, asset_context)
+            ),
         )
 
     edges = []
@@ -566,12 +699,14 @@ def parse_structured_topology(raw: dict):
         if not source or not target or source == target:
             continue
 
+        edge_context = json.dumps(item)
+
         edge_data = {
             "source": source,
             "target": target,
             "label": str(item.get("label") or "connection"),
-            "cvss": safe_float(item.get("cvss"), 5.0),
-            "complexity": safe_float(item.get("complexity"), 3.0),
+            "cvss": safe_float(item.get("cvss"), extract_cvss(edge_context)),
+            "complexity": safe_float(item.get("complexity"), infer_complexity(edge_context)),
         }
 
         for optional_field in (

@@ -6,7 +6,12 @@ from typing import Any
 
 import networkx as nx
 
-from backend.attack_engine.ollama_client import call_ollama_generate, ollama_model, parse_llm_json
+from backend.attack_engine.ollama_client import (
+    OllamaGenerateError,
+    call_ollama_generate,
+    ollama_model,
+    parse_llm_json,
+)
 from backend.attack_engine.schemas import MitigationEstimate, MitigationMode, NetworkData
 
 
@@ -39,7 +44,7 @@ def build_ai_mitigation_estimate(
         raw_response = call_ollama_generate(model, prompt, num_predict=900)
         parsed = parse_llm_json(raw_response.get("response", ""))
         return estimate_from_llm(parsed, edge, model)
-    except (urllib.error.URLError, TimeoutError, ValueError, KeyError, TypeError):
+    except (OllamaGenerateError, urllib.error.URLError, TimeoutError, ValueError, KeyError, TypeError):
         return estimate_from_metadata(edge, graph.nodes[source], graph.nodes[target], mode, baseline_paths)
 
 

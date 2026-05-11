@@ -9,7 +9,7 @@ An Electron desktop application that models network infrastructure as an attack 
 - Risk scoring using CVSS, asset value, and path complexity
 - Interactive Cytoscape.js graph visualization
 - Step-by-step breach path playback
-- JSON topology upload
+- PDF and JSON topology upload
 - JSON and PDF report export
 
 ## Setup
@@ -40,7 +40,7 @@ This starts:
 The remediation dashboard can generate an AI action plan through local Ollama, so no cloud API key is required.
 
 ```powershell
-ollama pull qwen3:6b
+ollama pull qwen2.5:7b
 ollama serve
 npm.cmd run dev
 ```
@@ -48,13 +48,15 @@ npm.cmd run dev
 Optional model override:
 
 ```powershell
-$env:OLLAMA_REMEDIATION_MODEL="qwen3:6b"
-$env:OLLAMA_ATTACK_CHAIN_MODEL="qwen3:6b"
+$env:OLLAMA_MODEL="qwen2.5:7b"
+$env:OLLAMA_REMEDIATION_MODEL="qwen2.5:7b"
+$env:OLLAMA_ATTACK_CHAIN_MODEL="qwen2.5:7b"
+$env:OLLAMA_MITIGATION_MODEL="qwen2.5:7b"
 ```
 
 ## Network Data Format
 
-Upload a JSON file with this shape:
+Upload a JSON file with this shape. If `asset_value`, `cvss`, or `complexity` are missing, the backend estimates them from the uploaded labels and metadata instead of loading demo values.
 
 ```json
 {
@@ -70,26 +72,16 @@ Upload a JSON file with this shape:
 
 Node `type` can be `entry`, `user`, `server`, `database`, or `critical`.
 
-## Detailed Sample Scenario
-
-A larger test topology is included at:
-
-```text
-samples/enterprise-breach-scenario.json
-```
-
-Use the app's upload control to load it. Good test combinations:
-
-- Entry: `Internet Phishing Campaign`; Critical asset: `Customer Database`
-- Entry: `VPN Gateway`; Critical asset: `Secrets Vault`
-- Entry: `Supplier Portal`; Critical asset: `Payment Database`
-
-Try switching between Dijkstra, BFS, and DFS to compare the easiest weighted attack path against simple graph traversal behavior.
-
 ## Backend API
 
 - `GET /health`
-- `GET /sample`
+- `POST /topology/upload`
+- `POST /validate-topology`
 - `POST /analyze`
+- `POST /paths/top`
+- `POST /remediation/recommend`
+- `POST /remediation/llm`
+- `POST /attack-chain/llm`
+- `POST /mitigation/simulate`
 - `POST /report/json`
 - `POST /report/pdf`

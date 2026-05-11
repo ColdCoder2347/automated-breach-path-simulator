@@ -2,11 +2,6 @@ import axios from "axios";
 
 export const API_BASE = window.breachSimulator?.apiBaseUrl ?? "http://127.0.0.1:8765";
 
-export async function getSampleNetwork() {
-  const response = await axios.get(`${API_BASE}/sample`);
-  return response.data;
-}
-
 export async function analyzeNetwork(payload) {
   const response = await axios.post(`${API_BASE}/analyze`, payload);
   return response.data;

@@ -78,33 +78,6 @@ function App() {
     useState("Waiting for upload");
 
   // =====================================================
-  // SAMPLE NETWORK
-  // =====================================================
-
-  useEffect(() => {
-
-    axios
-      .get(`${API_BASE}/sample`)
-      .then((response) => {
-
-        setNetwork(response.data);
-
-        setStatus(
-          "Sample topology loaded"
-        );
-
-      })
-      .catch(() => {
-
-        setStatus(
-          "Backend not reachable"
-        );
-
-      });
-
-  }, []);
-
-  // =====================================================
   // AUTO ENTRY / CRITICAL
   // =====================================================
 
@@ -860,6 +833,16 @@ function App() {
       };
     }) ?? [];
 
+  const selectedAlgorithmLabel =
+    {
+      bfs: "BFS",
+      dfs: "DFS",
+      dijkstra: "Dijkstra"
+    }[analysis?.algorithm ?? algorithm] ?? algorithm;
+
+  const attackPathLabels =
+    analysis?.steps?.map((step) => step.label) ?? [];
+
   return (
 
     <main className="app-shell">
@@ -900,8 +883,73 @@ function App() {
 
           <h2>Simulation</h2>
 
+          <label>
+            Path algorithm
+            <select
+              value={algorithm}
+              onChange={(event) => {
+                setAlgorithm(event.target.value);
+                setAnalysis(null);
+                setChainNarrative(null);
+                setMitigationResult(null);
+                setStatus("Algorithm changed. Run simulation again.");
+              }}
+            >
+              <option value="dijkstra">
+                Dijkstra - weighted lowest-cost path
+              </option>
+              <option value="bfs">
+                BFS - shortest hop path
+              </option>
+              <option value="dfs">
+                DFS - depth-first traversal path
+              </option>
+            </select>
+          </label>
+
+          <label>
+            Entry point
+            <select
+              value={entryPoint}
+              onChange={(event) => {
+                setEntryPoint(event.target.value);
+                setAnalysis(null);
+              }}
+            >
+              {entries.map((entry) => (
+                <option
+                  key={entry.id}
+                  value={entry.id}
+                >
+                  {entry.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Critical asset
+            <select
+              value={criticalAsset}
+              onChange={(event) => {
+                setCriticalAsset(event.target.value);
+                setAnalysis(null);
+              }}
+            >
+              {criticalAssets.map((asset) => (
+                <option
+                  key={asset.id}
+                  value={asset.id}
+                >
+                  {asset.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <button
             onClick={runSimulation}
+            disabled={!network}
           >
             Run Simulation
           </button>
@@ -936,12 +984,14 @@ function App() {
 
           <button
             onClick={exportJson}
+            disabled={!network}
           >
             Export JSON
           </button>
 
           <button
             onClick={exportPdf}
+            disabled={!network}
           >
             Export PDF
           </button>
@@ -952,12 +1002,101 @@ function App() {
 
       <section className="workspace">
 
-        <div
-          className="graph-area"
-          ref={cyRef}
-        />
+        <div className="graph-shell">
+          <div
+            className="graph-area"
+            ref={cyRef}
+          />
+
+          {!network && (
+            <div className="upload-empty-state">
+              <p className="eyebrow">
+                Upload Required
+              </p>
+              <h2>
+                Import a PDF or JSON topology to generate the attack graph
+              </h2>
+              <p>
+                Nodes, edges, severity, complexity, entry points, and critical assets are derived from the uploaded file.
+              </p>
+              <button
+                className="primary"
+                onClick={() =>
+                  fileInputRef.current?.click()
+                }
+              >
+                Upload Topology
+              </button>
+            </div>
+          )}
+        </div>
 
         <section className="llm-dashboard">
+
+          <section className="path-panel">
+            <div className="dashboard-header compact">
+              <div>
+                <p className="eyebrow">
+                  Attack Path
+                </p>
+                <h2>
+                  {selectedAlgorithmLabel} simulation result
+                </h2>
+              </div>
+              <span className="risk-pill">
+                Risk {analysis ? `${analysis.risk_score}/100` : "--"}
+              </span>
+            </div>
+
+            {!analysis && (
+              <div className="llm-empty">
+                <b>
+                  No algorithm result yet
+                </b>
+                <p>
+                  Choose BFS, DFS, or Dijkstra, then run the simulation to highlight and list the selected attack path.
+                </p>
+              </div>
+            )}
+
+            {analysis && !analysis.path.length && (
+              <div className="llm-error">
+                <b>
+                  No reachable path
+                </b>
+                <p>
+                  {selectedAlgorithmLabel} could not find a route from the selected entry point to the critical asset.
+                </p>
+              </div>
+            )}
+
+            {analysis && analysis.path.length > 0 && (
+              <div className="path-result">
+                <div className="path-route">
+                  {attackPathLabels.map((label, index) => (
+                    <span key={`${label}-${index}`}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+
+                <ol className="path-steps">
+                  {analysis.steps.map((step) => (
+                    <li key={`${step.node_id}-${step.index}`}>
+                      <b>
+                        {step.index + 1}. {step.label}
+                      </b>
+                      <small>
+                        {step.edge_label
+                          ? `via ${step.edge_label} | CVSS ${step.cvss} | Complexity ${step.complexity}`
+                          : step.type}
+                      </small>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </section>
 
           <div className="dashboard-header">
 
@@ -1026,7 +1165,7 @@ function App() {
                   No chain narrative yet
                 </b>
                 <p>
-                  Generate a simulation chain description to explain the attacker’s movement through the graph.
+                  Generate a simulation chain description to explain the attacker's movement through the graph.
                 </p>
               </div>
             )}
@@ -1281,7 +1420,7 @@ function App() {
               </b>
               <p>{llmError}</p>
               <small>
-                Start Ollama locally and run `ollama pull qwen3:6b`, then try again.
+                Start Ollama locally and run `ollama pull qwen2.5:7b`, then try again.
               </small>
             </div>
           )}

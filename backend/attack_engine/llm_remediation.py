@@ -6,7 +6,12 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from backend.attack_engine.ollama_client import call_ollama_generate, ollama_model, parse_llm_json
+from backend.attack_engine.ollama_client import (
+    OllamaGenerateError,
+    call_ollama_generate,
+    ollama_model,
+    parse_llm_json,
+)
 from backend.attack_engine.remediation import build_remediation_response
 from backend.attack_engine.schemas import (
     LLMRemediationAction,
@@ -21,8 +26,10 @@ def build_llm_remediation_response(payload: RemediationRequest) -> LLMRemediatio
     prompt = build_prompt(payload, baseline.model_dump())
 
     try:
-        raw_response = call_ollama_generate(model, prompt, num_predict=1400)
+        raw_response = call_ollama_generate(model, prompt, num_predict=850)
         parsed = parse_llm_json(raw_response.get("response", ""))
+    except OllamaGenerateError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except urllib.error.URLError as exc:
         raise HTTPException(
             status_code=503,
@@ -62,8 +69,8 @@ def build_llm_remediation_response(payload: RemediationRequest) -> LLMRemediatio
 
 def build_prompt(payload: RemediationRequest, baseline: dict[str, Any]) -> str:
     compact_network = {
-        "nodes": [node.model_dump() for node in payload.network.nodes[:40]],
-        "edges": [edge.model_dump() for edge in payload.network.edges[:80]],
+        "nodes": [node.model_dump() for node in payload.network.nodes[:25]],
+        "edges": [edge.model_dump() for edge in payload.network.edges[:45]],
     }
 
     requested_schema = {
@@ -74,12 +81,12 @@ def build_prompt(payload: RemediationRequest, baseline: dict[str, Any]) -> str:
                 "owner": "team responsible",
                 "control": "security control family",
                 "effort": "low | medium | high",
-                "impact": "expected risk reduction impact",
-                "rationale": "why this is prioritized",
-                "next_steps": ["step 1", "step 2", "step 3"],
+                "impact": "one short sentence",
+                "rationale": "one short sentence",
+                "next_steps": ["step 1", "step 2"],
             }
         ],
-        "residual_risk": "short paragraph",
+        "residual_risk": "one short paragraph",
         "assumptions": ["assumption 1", "assumption 2"],
     }
 
@@ -87,14 +94,18 @@ def build_prompt(payload: RemediationRequest, baseline: dict[str, Any]) -> str:
         "selected_entry": payload.entry_point,
         "selected_critical_asset": payload.critical_asset,
         "network": compact_network,
-        "baseline_remediation": baseline,
+        "baseline_remediation": {
+            "baseline_highest_risk": baseline.get("baseline_highest_risk"),
+            "recommendations": baseline.get("recommendations", [])[:5],
+        },
         "required_output_schema": requested_schema,
     }
 
     return (
         "You are a senior cybersecurity remediation architect for a desktop breach path simulator.\n"
-        "Generate concise, defensible remediation guidance using only the supplied graph and evidence.\n"
+        "Generate exactly 3 concise remediation actions using only the supplied graph and evidence.\n"
         "Prioritize controls that reduce multiple attack paths or protect critical assets.\n"
+        "Keep every field brief so the JSON is compact.\n"
         "Return ONLY valid JSON. Do not include markdown, code fences, or explanation outside JSON.\n\n"
         f"{json.dumps(context, indent=2)}"
     )

@@ -3,12 +3,18 @@ from __future__ import annotations
 import json
 import os
 import re
+import socket
 import urllib.request
 from typing import Any
 
 
 OLLAMA_GENERATE_URL = os.getenv("OLLAMA_GENERATE_URL", "http://127.0.0.1:11434/api/generate")
-DEFAULT_MODEL = "qwen3:6b"
+OLLAMA_TIMEOUT_SECONDS = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "300"))
+DEFAULT_MODEL = "qwen2.5:7b"
+
+
+class OllamaGenerateError(RuntimeError):
+    pass
 
 
 def ollama_model(env_name: str) -> str:
@@ -24,6 +30,7 @@ def call_ollama_generate(model: str, prompt: str, num_predict: int = 1400) -> di
         "options": {
             "temperature": 0.2,
             "num_predict": num_predict,
+            "num_ctx": 4096,
         },
     }
 
@@ -34,8 +41,22 @@ def call_ollama_generate(model: str, prompt: str, num_predict: int = 1400) -> di
         method="POST",
     )
 
-    with urllib.request.urlopen(request, timeout=120) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=OLLAMA_TIMEOUT_SECONDS) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        try:
+            parsed = json.loads(detail)
+            message = parsed.get("error", detail)
+        except json.JSONDecodeError:
+            message = detail
+        raise OllamaGenerateError(f"Ollama generation failed: {message}") from exc
+    except (TimeoutError, socket.timeout) as exc:
+        raise OllamaGenerateError(
+            f"Ollama generation timed out after {OLLAMA_TIMEOUT_SECONDS} seconds. "
+            "The model may still be loading; try again, close memory-heavy apps, or use qwen2.5:3b."
+        ) from exc
 
 
 def parse_llm_json(text: str) -> dict[str, Any]:
