@@ -35,6 +35,23 @@ This starts:
 - Vite renderer at `http://127.0.0.1:5173`
 - Electron desktop shell
 
+## Local LLM Remediation
+
+The remediation dashboard can generate an AI action plan through local Ollama, so no cloud API key is required.
+
+```powershell
+ollama pull qwen3:6b
+ollama serve
+npm.cmd run dev
+```
+
+Optional model override:
+
+```powershell
+$env:OLLAMA_REMEDIATION_MODEL="qwen3:6b"
+$env:OLLAMA_ATTACK_CHAIN_MODEL="qwen3:6b"
+```
+
 ## Network Data Format
 
 Upload a JSON file with this shape:

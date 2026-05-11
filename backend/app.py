@@ -12,9 +12,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from backend.attack_engine.paths import build_top_paths_response
+from backend.attack_engine.llm_attack_chain import build_llm_attack_chain_response
+from backend.attack_engine.llm_remediation import build_llm_remediation_response
 from backend.attack_engine.remediation import build_remediation_response
 from backend.attack_engine.topology_routes import router as topology_router
 from backend.attack_engine.schemas import (
+    LLMAttackChainRequest,
+    LLMAttackChainResponse,
+    LLMRemediationResponse,
     RemediationRequest,
     RemediationResponse,
     TopPathsRequest,
@@ -301,6 +306,14 @@ def top_paths(payload: TopPathsRequest) -> TopPathsResponse:
 @app.post("/remediation/recommend")
 def remediation_recommend(payload: RemediationRequest) -> RemediationResponse:
     return build_remediation_response(payload)
+
+@app.post("/remediation/llm")
+def remediation_llm(payload: RemediationRequest) -> LLMRemediationResponse:
+    return build_llm_remediation_response(payload)
+
+@app.post("/attack-chain/llm")
+def attack_chain_llm(payload: LLMAttackChainRequest) -> LLMAttackChainResponse:
+    return build_llm_attack_chain_response(payload)
 
 @app.post("/report/pdf")
 def report_pdf(payload: AnalyzeRequest) -> Response:

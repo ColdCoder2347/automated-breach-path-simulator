@@ -118,6 +118,46 @@ class RemediationResponse(BaseModel):
     recommendations: list[RemediationRecommendation]
 
 
+class LLMRemediationAction(BaseModel):
+    title: str
+    owner: str
+    control: str
+    effort: str
+    impact: str
+    rationale: str
+    next_steps: list[str]
+
+
+class LLMRemediationResponse(BaseModel):
+    generated: bool
+    provider: str
+    model: str | None = None
+    executive_summary: str
+    priority_actions: list[LLMRemediationAction]
+    residual_risk: str
+    assumptions: list[str]
+    source_recommendation_count: int
+
+
+class LLMAttackChainRequest(BaseModel):
+    network: NetworkData
+    algorithm: Algorithm = Algorithm.dijkstra
+    entry_point: str | None = None
+    critical_asset: str | None = None
+
+
+class LLMAttackChainResponse(BaseModel):
+    generated: bool
+    provider: str
+    model: str | None = None
+    title: str
+    narrative: str
+    kill_chain: list[str]
+    attacker_objective: str
+    detection_opportunities: list[str]
+    path: list[str]
+
+
 class TopologyValidationIssue(BaseModel):
     severity: str
     code: str

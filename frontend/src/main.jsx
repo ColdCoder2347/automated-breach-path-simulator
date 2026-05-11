@@ -29,6 +29,24 @@ function App() {
 
   const [analysis, setAnalysis] = useState(null);
 
+  const [llmRemediation, setLlmRemediation] =
+    useState(null);
+
+  const [llmLoading, setLlmLoading] =
+    useState(false);
+
+  const [llmError, setLlmError] =
+    useState("");
+
+  const [chainNarrative, setChainNarrative] =
+    useState(null);
+
+  const [chainLoading, setChainLoading] =
+    useState(false);
+
+  const [chainError, setChainError] =
+    useState("");
+
   const [algorithm, setAlgorithm] =
     useState("dijkstra");
 
@@ -196,12 +214,7 @@ function App() {
 
       elements,
 
-      layout: {
-        name: "breadthfirst",
-        directed: true,
-        padding: 40,
-        spacingFactor: 1.4
-      },
+      layout: buildGraphLayout(network),
 
       style: [
 
@@ -432,6 +445,14 @@ function App() {
 
       setAnalysis(response.data);
 
+      setLlmRemediation(null);
+
+      setLlmError("");
+
+      setChainNarrative(null);
+
+      setChainError("");
+
       setStatus(
         "Simulation complete"
       );
@@ -525,6 +546,14 @@ function App() {
 
       setAnalysis(null);
 
+      setLlmRemediation(null);
+
+      setLlmError("");
+
+      setChainNarrative(null);
+
+      setChainError("");
+
       setStatus(
         `Loaded ${parsed.nodes.length} nodes and ${parsed.edges.length} edges from ${file.name}`
       );
@@ -544,6 +573,104 @@ function App() {
 
     } finally {
       event.target.value = "";
+    }
+  }
+
+  // =====================================================
+  // LLM REMEDIATION
+  // =====================================================
+
+  async function generateLlmRemediation() {
+
+    if (!network) {
+      return;
+    }
+
+    try {
+
+      setLlmLoading(true);
+
+      setLlmError("");
+
+      setLlmRemediation(null);
+
+      const response =
+        await axios.post(
+          `${API_BASE}/remediation/llm`,
+          {
+            network,
+            entry_point:
+              entryPoint,
+            critical_asset:
+              criticalAsset,
+            limit: 5
+          }
+        );
+
+      setLlmRemediation(
+        response.data
+      );
+
+    } catch (error) {
+
+      const detail =
+        error.response?.data?.detail ??
+        error.message ??
+        "LLM remediation failed";
+
+      setLlmError(detail);
+
+    } finally {
+
+      setLlmLoading(false);
+
+    }
+  }
+
+  async function generateAttackChainNarrative() {
+
+    if (!network) {
+      return;
+    }
+
+    try {
+
+      setChainLoading(true);
+
+      setChainError("");
+
+      setChainNarrative(null);
+
+      const response =
+        await axios.post(
+          `${API_BASE}/attack-chain/llm`,
+          {
+            network,
+            algorithm,
+            entry_point:
+              entryPoint,
+            critical_asset:
+              criticalAsset
+          }
+        );
+
+      setChainNarrative(
+        response.data
+      );
+
+    } catch (error) {
+
+      const detail =
+        error.response?.data?.detail ??
+        error.message ??
+        "Attack chain generation failed";
+
+      setChainError(detail);
+
+    } finally {
+
+      setChainLoading(false);
+
     }
   }
 
@@ -679,6 +806,25 @@ function App() {
           </button>
 
           <button
+            className="primary"
+            onClick={generateLlmRemediation}
+            disabled={!network || llmLoading}
+          >
+            {llmLoading
+              ? "Generating..."
+              : "Generate LLM Remediation"}
+          </button>
+
+          <button
+            onClick={generateAttackChainNarrative}
+            disabled={!network || chainLoading}
+          >
+            {chainLoading
+              ? "Describing..."
+              : "Describe Attack Chain"}
+          </button>
+
+          <button
             onClick={exportJson}
           >
             Export JSON
@@ -700,6 +846,241 @@ function App() {
           className="graph-area"
           ref={cyRef}
         />
+
+        <section className="llm-dashboard">
+
+          <div className="dashboard-header">
+
+            <div>
+              <p className="eyebrow">
+                AI Remediation
+              </p>
+              <h2>
+                LLM-generated action plan
+              </h2>
+            </div>
+
+            <button
+              onClick={generateLlmRemediation}
+              disabled={!network || llmLoading}
+            >
+              {llmLoading
+                ? "Generating"
+                : "Refresh"}
+            </button>
+
+          </div>
+
+          <section className="chain-panel">
+
+            <div className="dashboard-header compact">
+              <div>
+                <p className="eyebrow">
+                  Simulation Chain
+                </p>
+                <h2>
+                  Attacker movement narrative
+                </h2>
+              </div>
+              <button
+                onClick={generateAttackChainNarrative}
+                disabled={!network || chainLoading}
+              >
+                {chainLoading
+                  ? "Describing"
+                  : "Generate"}
+              </button>
+            </div>
+
+            {chainLoading && (
+              <div className="llm-loading slim">
+                <div className="loader-ring" />
+                <p>
+                  Qwen is describing how the attacker moves through the selected graph path.
+                </p>
+              </div>
+            )}
+
+            {!chainLoading && chainError && (
+              <div className="llm-error">
+                <b>
+                  Attack chain narrative unavailable
+                </b>
+                <p>{chainError}</p>
+              </div>
+            )}
+
+            {!chainLoading && !chainError && !chainNarrative && (
+              <div className="llm-empty">
+                <b>
+                  No chain narrative yet
+                </b>
+                <p>
+                  Generate a simulation chain description to explain the attacker’s movement through the graph.
+                </p>
+              </div>
+            )}
+
+            {!chainLoading && chainNarrative && (
+              <div className="chain-content">
+                <article className="summary-card">
+                  <span>
+                    {chainNarrative.title}
+                  </span>
+                  <p>
+                    {chainNarrative.narrative}
+                  </p>
+                  <small>
+                    Objective: {chainNarrative.attacker_objective}
+                  </small>
+                </article>
+
+                <div className="chain-columns">
+                  <div>
+                    <h3>
+                      Kill Chain
+                    </h3>
+                    <ol>
+                      {chainNarrative.kill_chain.map(
+                        (step) => (
+                          <li key={step}>
+                            {step}
+                          </li>
+                        )
+                      )}
+                    </ol>
+                  </div>
+                  <div>
+                    <h3>
+                      Detection Opportunities
+                    </h3>
+                    <ul>
+                      {chainNarrative.detection_opportunities.map(
+                        (item) => (
+                          <li key={item}>
+                            {item}
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </section>
+
+          {llmLoading && (
+            <div className="llm-loading">
+              <div className="loader-ring" />
+              <div>
+                <b>
+                  Generating remediation plan
+                </b>
+                <p>
+                  The local backend is sending the current graph, critical path context, and ranked remediation evidence to the LLM.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!llmLoading && llmError && (
+            <div className="llm-error">
+              <b>
+                LLM generation unavailable
+              </b>
+              <p>{llmError}</p>
+              <small>
+                Start Ollama locally and run `ollama pull qwen3:6b`, then try again.
+              </small>
+            </div>
+          )}
+
+          {!llmLoading && !llmError && !llmRemediation && (
+            <div className="llm-empty">
+              <b>
+                No AI plan generated yet
+              </b>
+              <p>
+                Upload or load a topology, then generate an LLM remediation plan for the current entry point and critical asset.
+              </p>
+            </div>
+          )}
+
+          {!llmLoading && llmRemediation && (
+            <div className="llm-content">
+
+              <article className="summary-card">
+                <span>
+                  Executive Summary
+                </span>
+                <p>
+                  {llmRemediation.executive_summary}
+                </p>
+                <small>
+                  Provider: {llmRemediation.provider}
+                  {llmRemediation.model
+                    ? ` | Model: ${llmRemediation.model}`
+                    : ""}
+                </small>
+              </article>
+
+              <div className="action-grid">
+                {llmRemediation.priority_actions.map(
+                  (action, index) => (
+                    <article
+                      className="action-card"
+                      key={`${action.title}-${index}`}
+                    >
+                      <div className="action-rank">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h3>
+                          {action.title}
+                        </h3>
+                        <p>
+                          {action.rationale}
+                        </p>
+                        <div className="action-meta">
+                          <span>
+                            {action.owner}
+                          </span>
+                          <span>
+                            {action.control}
+                          </span>
+                          <span>
+                            Effort: {action.effort}
+                          </span>
+                        </div>
+                        <ul>
+                          {action.next_steps.map(
+                            (step) => (
+                              <li key={step}>
+                                {step}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    </article>
+                  )
+                )}
+              </div>
+
+              <article className="residual-card">
+                <b>
+                  Residual Risk
+                </b>
+                <p>
+                  {llmRemediation.residual_risk}
+                </p>
+              </article>
+
+            </div>
+          )}
+
+        </section>
 
       </section>
 
@@ -738,6 +1119,41 @@ function downloadBlob(
   link.remove();
 
   URL.revokeObjectURL(url);
+}
+
+function buildGraphLayout(network) {
+  const nodeCount =
+    network?.nodes?.length ?? 0;
+
+  const edgeCount =
+    network?.edges?.length ?? 0;
+
+  if (nodeCount >= 14 || edgeCount >= 18) {
+    return {
+      name: "cose",
+      animate: false,
+      fit: true,
+      padding: 80,
+      nodeRepulsion: 16000,
+      nodeOverlap: 24,
+      idealEdgeLength: 170,
+      edgeElasticity: 90,
+      nestingFactor: 1.2,
+      gravity: 0.18,
+      numIter: 2200,
+      initialTemp: 180,
+      coolingFactor: 0.92,
+      minTemp: 1
+    };
+  }
+
+  return {
+    name: "breadthfirst",
+    directed: true,
+    padding: 70,
+    spacingFactor: nodeCount > 8 ? 2.1 : 1.6,
+    avoidOverlap: true
+  };
 }
 
 createRoot(
