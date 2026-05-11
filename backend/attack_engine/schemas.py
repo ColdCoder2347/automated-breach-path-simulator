@@ -118,6 +118,48 @@ class RemediationResponse(BaseModel):
     recommendations: list[RemediationRecommendation]
 
 
+class MitigationMode(str, Enum):
+    block_edge = "block_edge"
+    weaken_edge = "weaken_edge"
+
+
+class MitigationSimulationRequest(BaseModel):
+    network: NetworkData
+    entry_point: str | None = None
+    critical_asset: str | None = None
+    limit: int = Field(default=5, ge=1, le=25)
+    target_edge: str
+    mode: MitigationMode = MitigationMode.block_edge
+
+
+class MitigationEstimate(BaseModel):
+    provider: str
+    model: str | None = None
+    generated_by_llm: bool = False
+    confidence: float = Field(default=0.5, ge=0, le=1)
+    cvss_after: float = Field(default=5, ge=0, le=10)
+    complexity_after: float = Field(default=5, ge=1, le=10)
+    weight_after: float = Field(default=5, ge=0)
+    rationale: str
+    controls: list[str] = []
+    assumptions: list[str] = []
+
+
+class MitigationSimulationResponse(BaseModel):
+    target_edge: str
+    mode: MitigationMode
+    estimate: MitigationEstimate | None = None
+    baseline_highest_risk: float
+    mitigated_highest_risk: float
+    risk_reduction: float
+    baseline_path_count: int
+    mitigated_path_count: int
+    blocked_path_count: int
+    baseline_paths: list[PathSummary]
+    mitigated_paths: list[PathSummary]
+    summary: str
+
+
 class LLMRemediationAction(BaseModel):
     title: str
     owner: str

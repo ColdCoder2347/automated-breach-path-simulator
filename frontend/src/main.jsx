@@ -47,6 +47,21 @@ function App() {
   const [chainError, setChainError] =
     useState("");
 
+  const [mitigationResult, setMitigationResult] =
+    useState(null);
+
+  const [mitigationLoading, setMitigationLoading] =
+    useState(false);
+
+  const [mitigationError, setMitigationError] =
+    useState("");
+
+  const [mitigationEdge, setMitigationEdge] =
+    useState("");
+
+  const [mitigationMode, setMitigationMode] =
+    useState("block_edge");
+
   const [algorithm, setAlgorithm] =
     useState("dijkstra");
 
@@ -122,6 +137,15 @@ function App() {
       critical[0]?.id ??
       network.nodes.at(-1)?.id ??
       ""
+    );
+
+    const firstEdge =
+      network.edges?.[0];
+
+    setMitigationEdge(
+      firstEdge
+        ? `${firstEdge.source}->${firstEdge.target}`
+        : ""
     );
 
   }, [network]);
@@ -453,6 +477,10 @@ function App() {
 
       setChainError("");
 
+      setMitigationResult(null);
+
+      setMitigationError("");
+
       setStatus(
         "Simulation complete"
       );
@@ -553,6 +581,10 @@ function App() {
       setChainNarrative(null);
 
       setChainError("");
+
+      setMitigationResult(null);
+
+      setMitigationError("");
 
       setStatus(
         `Loaded ${parsed.nodes.length} nodes and ${parsed.edges.length} edges from ${file.name}`
@@ -674,6 +706,57 @@ function App() {
     }
   }
 
+  async function runMitigationSimulation() {
+
+    if (!network || !mitigationEdge) {
+      return;
+    }
+
+    try {
+
+      setMitigationLoading(true);
+
+      setMitigationError("");
+
+      setMitigationResult(null);
+
+      const response =
+        await axios.post(
+          `${API_BASE}/mitigation/simulate`,
+          {
+            network,
+            entry_point:
+              entryPoint,
+            critical_asset:
+              criticalAsset,
+            limit: 5,
+            target_edge:
+              mitigationEdge,
+            mode:
+              mitigationMode
+          }
+        );
+
+      setMitigationResult(
+        response.data
+      );
+
+    } catch (error) {
+
+      const detail =
+        error.response?.data?.detail ??
+        error.message ??
+        "Mitigation simulation failed";
+
+      setMitigationError(detail);
+
+    } finally {
+
+      setMitigationLoading(false);
+
+    }
+  }
+
   // =====================================================
   // EXPORTS
   // =====================================================
@@ -759,6 +842,24 @@ function App() {
       (n) => n.type === "critical"
     ) ?? [];
 
+  const mitigationOptions =
+    network?.edges?.map((edge) => {
+      const sourceLabel =
+        network.nodes.find(
+          (node) => node.id === edge.source
+        )?.label ?? edge.source;
+
+      const targetLabel =
+        network.nodes.find(
+          (node) => node.id === edge.target
+        )?.label ?? edge.target;
+
+      return {
+        id: `${edge.source}->${edge.target}`,
+        label: `${sourceLabel} -> ${targetLabel} (${edge.label ?? "connection"})`
+      };
+    }) ?? [];
+
   return (
 
     <main className="app-shell">
@@ -822,6 +923,15 @@ function App() {
             {chainLoading
               ? "Describing..."
               : "Describe Attack Chain"}
+          </button>
+
+          <button
+            onClick={runMitigationSimulation}
+            disabled={!network || !mitigationEdge || mitigationLoading}
+          >
+            {mitigationLoading
+              ? "Simulating..."
+              : "Simulate Mitigation"}
           </button>
 
           <button
@@ -965,6 +1075,186 @@ function App() {
                     </ul>
                   </div>
                 </div>
+              </div>
+            )}
+
+          </section>
+
+          <section className="mitigation-panel">
+
+            <div className="dashboard-header compact">
+              <div>
+                <p className="eyebrow">
+                  Before / After
+                </p>
+                <h2>
+                  Mitigation simulation
+                </h2>
+              </div>
+              <button
+                onClick={runMitigationSimulation}
+                disabled={!network || !mitigationEdge || mitigationLoading}
+              >
+                {mitigationLoading
+                  ? "Simulating"
+                  : "Run"}
+              </button>
+            </div>
+
+            <div className="mitigation-controls">
+              <label>
+                Attack edge
+                <select
+                  value={mitigationEdge}
+                  onChange={(event) =>
+                    setMitigationEdge(event.target.value)
+                  }
+                >
+                  {mitigationOptions.map(
+                    (option) => (
+                      <option
+                        key={option.id}
+                        value={option.id}
+                      >
+                        {option.label}
+                      </option>
+                    )
+                  )}
+                </select>
+              </label>
+              <label>
+                Mitigation mode
+                <select
+                  value={mitigationMode}
+                  onChange={(event) =>
+                    setMitigationMode(event.target.value)
+                  }
+                >
+                  <option value="block_edge">
+                    Block edge
+                  </option>
+                  <option value="weaken_edge">
+                    Weaken edge
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            {mitigationLoading && (
+              <div className="llm-loading slim">
+                <div className="loader-ring" />
+                <p>
+                  Estimating post-mitigation values with Qwen/Ollama, then recomputing ranked paths.
+                </p>
+              </div>
+            )}
+
+            {!mitigationLoading && mitigationError && (
+              <div className="llm-error">
+                <b>
+                  Mitigation simulation failed
+                </b>
+                <p>{mitigationError}</p>
+              </div>
+            )}
+
+            {!mitigationLoading && !mitigationError && !mitigationResult && (
+              <div className="llm-empty">
+                <b>
+                  No mitigation simulated yet
+                </b>
+                <p>
+                  Select an edge and run a virtual mitigation to compare risk before and after.
+                </p>
+              </div>
+            )}
+
+            {!mitigationLoading && mitigationResult && (
+              <div className="mitigation-results">
+                <div className="risk-compare">
+                  <article>
+                    <span>
+                      Before
+                    </span>
+                    <b>
+                      {mitigationResult.baseline_highest_risk}
+                    </b>
+                  </article>
+                  <article>
+                    <span>
+                      After
+                    </span>
+                    <b>
+                      {mitigationResult.mitigated_highest_risk}
+                    </b>
+                  </article>
+                  <article className="reduction">
+                    <span>
+                      Reduction
+                    </span>
+                    <b>
+                      {mitigationResult.risk_reduction}
+                    </b>
+                  </article>
+                </div>
+
+                <p>
+                  {mitigationResult.summary}
+                </p>
+
+                <div className="mitigation-stats">
+                  <span>
+                    Blocked paths: {mitigationResult.blocked_path_count}
+                  </span>
+                  <span>
+                    Baseline paths: {mitigationResult.baseline_path_count}
+                  </span>
+                  <span>
+                    Remaining paths: {mitigationResult.mitigated_path_count}
+                  </span>
+                </div>
+
+                {mitigationResult.estimate && (
+                  <div className="ai-estimate">
+                    <div>
+                      <span>
+                        Estimate source
+                      </span>
+                      <b>
+                        {mitigationResult.estimate.generated_by_llm
+                          ? `${mitigationResult.estimate.model ?? "Qwen"} via Ollama`
+                          : "Metadata risk model"}
+                      </b>
+                    </div>
+                    <div>
+                      <span>
+                        Confidence
+                      </span>
+                      <b>
+                        {Math.round((mitigationResult.estimate.confidence ?? 0) * 100)}%
+                      </b>
+                    </div>
+                    <div>
+                      <span>
+                        Post-mitigation CVSS
+                      </span>
+                      <b>
+                        {mitigationResult.estimate.cvss_after}
+                      </b>
+                    </div>
+                    <div>
+                      <span>
+                        Post-mitigation complexity
+                      </span>
+                      <b>
+                        {mitigationResult.estimate.complexity_after}
+                      </b>
+                    </div>
+                    <p>
+                      {mitigationResult.estimate.rationale}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

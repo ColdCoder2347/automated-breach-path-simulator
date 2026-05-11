@@ -14,12 +14,15 @@ from pydantic import BaseModel, Field
 from backend.attack_engine.paths import build_top_paths_response
 from backend.attack_engine.llm_attack_chain import build_llm_attack_chain_response
 from backend.attack_engine.llm_remediation import build_llm_remediation_response
+from backend.attack_engine.mitigation import build_mitigation_simulation_response
 from backend.attack_engine.remediation import build_remediation_response
 from backend.attack_engine.topology_routes import router as topology_router
 from backend.attack_engine.schemas import (
     LLMAttackChainRequest,
     LLMAttackChainResponse,
     LLMRemediationResponse,
+    MitigationSimulationRequest,
+    MitigationSimulationResponse,
     RemediationRequest,
     RemediationResponse,
     TopPathsRequest,
@@ -314,6 +317,10 @@ def remediation_llm(payload: RemediationRequest) -> LLMRemediationResponse:
 @app.post("/attack-chain/llm")
 def attack_chain_llm(payload: LLMAttackChainRequest) -> LLMAttackChainResponse:
     return build_llm_attack_chain_response(payload)
+
+@app.post("/mitigation/simulate")
+def mitigation_simulate(payload: MitigationSimulationRequest) -> MitigationSimulationResponse:
+    return build_mitigation_simulation_response(payload)
 
 @app.post("/report/pdf")
 def report_pdf(payload: AnalyzeRequest) -> Response:
